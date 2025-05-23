@@ -1,0 +1,44 @@
+<resources>
+    <string name="app_name">Семейный Бюджет</string>
+    <string name="dark_theme">Тёмная</string>
+    <string name="light_theme">Светлая</string>
+    <string name="russian">Русский</string>
+    <string name="english">Английский</string>
+    <string name="tab_home">Главная</string>
+    <string name="tab_history">История</string>
+    <string name="tab_group">Группа</string>
+    <string name="tab_settings">Настройки</string>
+    <string name="delete_account">Удалить аккаунт</string>
+    <string name="logout">Выйти из аккаунта</string>
+    <string name="general">Общие</string>
+    <string name="choose_theme">Выберите тему</string>
+    <string name="choose_language">Выберите язык</string>
+    <string name="confirm_delete">Подтвердите удаление</string>
+    <string name="delete_question">Вы уверены, что хотите удалить свой аккаунт?</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="delete_user_missing_username">Имя пользователя отсутствует, нельзя удалить аккаунт</string>
+    <string name="delete_user_success">Аккаунт успешно удалён</string>
+    <string name="delete_user_not_found">Пользователь не найден</string>
+    <string name="delete_user_forbidden">У вас нет прав для удаления</string>
+    <string name="delete_user_server_error">Ошибка сервера при удалении</string>
+    <string name="delete_user_unknown_error">Ошибка удаления: %1$d</string>
+    <string name="delete_user_no_internet">Проблема с сетью. Проверьте подключение к интернету</string>
+    <string name="delete_user_exception">Неизвестная ошибка при удалении аккаунта</string>
+    <string name="lang_ru">Ру</string>
+    <string name="lang_en">Анг</string>
+    <string name="login">Вход</string>
+    <string name="username">Имя пользователя</string>
+    <string name="password">Пароль</string>
+    <string name="please_fill_in_all_fields">Пожалуйста, заполните все поля</string>
+    <string name="dont_have_account">Нет аккаунта? Зарегистрируйтесь здесь</string>
+    <string name="login_successful">Успешный вход!</string>
+    <string name="register">Зарегистрироваться</string>
+    <string name="email">Почта</string>
+    <string name="register_button">Регистрация</string>
+    <string name="login_text">Уже есть аккаунт?</string>
+    <string name="registration_success_message">Регистрация успешна!</string>
+    <string name="fill_fields_message">Пожалуйста, заполните все поля</string>
+
+
+</resources>
