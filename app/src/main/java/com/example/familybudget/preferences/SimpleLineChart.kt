@@ -17,23 +17,47 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.familybudget.dto.TransactionDto
 import org.threeten.bp.LocalDateTime
+import org.threeten.bp.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.max
 
+data class DailySum(
+    val date: String,
+    val sum: Double
+)
+
 @Composable
 fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
-    val sortedTransactions = remember(transactions) {
-        transactions.sortedBy {
-            try {
-                LocalDateTime.parse(it.date)
-            } catch (_: Exception) {
-                LocalDateTime.MIN
+    val dailySums = remember(transactions) {
+        transactions
+            .groupBy { 
+                try {
+                    LocalDateTime.parse(it.date).toLocalDate().toString()
+                } catch (_: Exception) {
+                    it.date.take(10)
+                }
             }
-        }
+            .map { (date, dailyTransactions) ->
+                DailySum(
+                    date = try {
+                        LocalDateTime.parse(date).dayOfMonth.toString()
+                    } catch (_: Exception) {
+                        date.split("-").lastOrNull() ?: date
+                    },
+                    sum = dailyTransactions.sumOf { abs(it.amount) }
+                )
+            }
+            .sortedBy { 
+                try {
+                    it.date.toInt()
+                } catch (_: Exception) {
+                    0
+                }
+            }
     }
 
-    val points = sortedTransactions.map { abs(it.amount.toFloat()) }
-    val dates = sortedTransactions.map { it.date.take(10) }
+    val points = dailySums.map { it.sum.toFloat() }
+    val dates = dailySums.map { it.date }
 
     val progress by animateFloatAsState(
         targetValue = 1f,
@@ -50,8 +74,6 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
     val labelColor = if (isDark) Color.LightGray else Color.DarkGray
     val gridLineColor = colorScheme.onSurface.copy(alpha = 0.15f)
     val shadowColor = Color.Black.copy(alpha = 0.08f)
-    val surfaceColor = colorScheme.surface
-    val onSurface = colorScheme.onSurface
 
     Box(
         modifier = Modifier
@@ -79,14 +101,14 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
             if (points.size < 2) return@Canvas
 
             val maxY = points.maxOrNull() ?: 0f
-            val minY = points.minOrNull() ?: 0f
-            val rangeY = (maxY - minY).takeIf { it > 0f } ?: 1f
+            val minY = 0f
+            val rangeY = maxY.takeIf { it > 0f } ?: 1f
             val stepX = size.width / (points.size - 1)
             val yAxisSteps = 4
 
             val coords = points.mapIndexed { index, y ->
                 val x = index * stepX
-                val scaledY = size.height - ((y - minY) / rangeY) * size.height
+                val scaledY = size.height - (y / rangeY) * size.height
                 Offset(x, scaledY)
             }
 
@@ -177,7 +199,7 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
             }
 
             labelIndices.forEach { i ->
-                val label = dates.getOrNull(i)?.replace("-", ".") ?: ""
+                val label = dates.getOrNull(i) ?: ""
                 drawContext.canvas.nativeCanvas.apply {
                     val paint = android.graphics.Paint().apply {
                         isAntiAlias = true
@@ -185,7 +207,7 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
                         color = labelColor.toArgb()
                         setShadowLayer(3f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
                     }
-                    drawText(label, coords[i].x - textSize, size.height + 28f, paint)
+                    drawText(label, coords[i].x - textSize/2, size.height + 28f, paint)
                 }
             }
 
@@ -193,6 +215,7 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
             if (selectedPointIndex in coords.indices) {
                 val point = coords[selectedPointIndex]
                 val amount = points[selectedPointIndex]
+                val date = dates[selectedPointIndex]
 
                 val tooltipWidth = 124f
                 val tooltipHeight = 50f
@@ -202,30 +225,33 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
                     else -> point.x - tooltipWidth / 2f
                 }
 
-                val offsetY = (point.y - tooltipHeight - 16f).coerceAtLeast(0f)
-
                 drawRoundRect(
-                    color = Color.Black.copy(alpha = 0.2f),
-                    topLeft = Offset(offsetX, offsetY),
+                    color = Color.White,
+                    topLeft = Offset(offsetX, point.y - tooltipHeight - 8f),
                     size = Size(tooltipWidth, tooltipHeight),
-                    cornerRadius = CornerRadius(14f, 14f)
-                )
-
-                drawRoundRect(
-                    color = surfaceColor,
-                    topLeft = Offset(offsetX - 2f, offsetY - 2f),
-                    size = Size(tooltipWidth, tooltipHeight),
-                    cornerRadius = CornerRadius(14f, 14f)
+                    cornerRadius = CornerRadius(8f, 8f),
+                    alpha = 0.9f
                 )
 
                 drawContext.canvas.nativeCanvas.apply {
                     val paint = android.graphics.Paint().apply {
                         isAntiAlias = true
-                        textSize = 28f
-                        color = onSurface.toArgb()
-                        setShadowLayer(4f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
+                        textSize = 24f
+                        color = android.graphics.Color.BLACK
                     }
-                    drawText(String.format("%.2f ₽", amount), offsetX + 14f, offsetY + 32f, paint)
+                    drawText(
+                        String.format("%.0f ₽", amount),
+                        offsetX + 12f,
+                        point.y - tooltipHeight / 2f,
+                        paint
+                    )
+                    paint.textSize = 20f
+                    drawText(
+                        date,
+                        offsetX + 12f,
+                        point.y - 12f,
+                        paint
+                    )
                 }
             }
         }
