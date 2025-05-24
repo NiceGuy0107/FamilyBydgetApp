@@ -58,14 +58,14 @@ fun HistoryTab(
                 onClick = { showStartDatePicker = true },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("С: ${startDate.format(dateFormatter)}")
+                Text("С ${startDate.format(dateFormatter)}")
             }
             
             OutlinedButton(
                 onClick = { showEndDatePicker = true },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("По: ${endDate.format(dateFormatter)}")
+                Text("По ${endDate.format(dateFormatter)}")
             }
         }
 

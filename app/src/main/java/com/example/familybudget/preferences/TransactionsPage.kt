@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -324,11 +325,11 @@ fun TransactionsPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp),
-            containerColor = Color(red = 73, green = 93, blue = 146),
+            containerColor = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336),
             shape = CircleShape
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
+                imageVector = if (isIncome) Icons.Default.Add else Icons.Default.Remove,
                 contentDescription = if (isIncome) "Добавить доход" else "Добавить расход",
                 tint = Color.White,
                 modifier = Modifier.height(28.dp)
