@@ -108,7 +108,11 @@ fun MainScreen(
                         transactionViewModel.loadGroupTransactions(group.id.toLong())
                     }
 
-                    HistoryTab(username = username, transactions = transactions)
+                    HistoryTab(
+                        username = username,
+                        transactions = transactions,
+                        viewModel = transactionViewModel
+                    )
                 } else {
                     Text("Нет данных о группе")
                 }

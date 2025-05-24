@@ -12,5 +12,10 @@ fun HistoryScreen(viewModel: TransactionViewModel, groupId: Long, username: Stri
     LaunchedEffect(groupId) {
         viewModel.loadGroupTransactions(groupId)
     }
-    HistoryTab(username = username, transactions = transactions)
+    
+    HistoryTab(
+        username = username,
+        transactions = transactions,
+        viewModel = viewModel
+    )
 }

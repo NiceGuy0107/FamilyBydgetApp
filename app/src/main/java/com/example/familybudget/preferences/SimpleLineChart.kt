@@ -17,6 +17,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.familybudget.dto.TransactionDto
 import org.threeten.bp.LocalDateTime
+import org.threeten.bp.LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.max
@@ -27,33 +28,40 @@ data class DailySum(
 )
 
 @Composable
-fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
-    val dailySums = remember(transactions) {
-        transactions
+fun SimpleLineChart(
+    transactions: List<TransactionDto>,
+    isIncome: Boolean,
+    startDate: LocalDate = LocalDate.now().withDayOfMonth(1),
+    endDate: LocalDate = LocalDate.now()
+) {
+    val dailySums = remember(transactions, startDate, endDate) {
+        // Create a sequence of all dates in the selected range (inclusive)
+        val dateRange = generateSequence(startDate) { date ->
+            if (date < endDate) date.plusDays(1) else null
+        }.toList() + listOf(endDate)
+
+        // Group transactions by date
+        val transactionsByDate = transactions
             .groupBy { 
                 try {
-                    LocalDateTime.parse(it.date).toLocalDate().toString()
+                    LocalDateTime.parse(it.date).toLocalDate()
                 } catch (_: Exception) {
-                    it.date.take(10)
+                    null
                 }
             }
-            .map { (date, dailyTransactions) ->
-                DailySum(
-                    date = try {
-                        LocalDateTime.parse(date).dayOfMonth.toString()
-                    } catch (_: Exception) {
-                        date.split("-").lastOrNull() ?: date
-                    },
-                    sum = dailyTransactions.sumOf { abs(it.amount) }
-                )
+            .filterKeys { it != null }
+            .mapKeys { it.key!! }
+            .mapValues { (_, dailyTransactions) ->
+                dailyTransactions.sumOf { abs(it.amount) }
             }
-            .sortedBy { 
-                try {
-                    it.date.toInt()
-                } catch (_: Exception) {
-                    0
-                }
-            }
+
+        // Create list of daily sums with zeros for days without transactions
+        dateRange.distinct().map { date ->
+            DailySum(
+                date = date.dayOfMonth.toString(),
+                sum = transactionsByDate[date] ?: 0.0
+            )
+        }
     }
 
     val points = dailySums.map { it.sum.toFloat() }
@@ -98,12 +106,10 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
                 .fillMaxSize()
                 .padding(start = 40.dp, end = 16.dp, top = 32.dp, bottom = 40.dp)
         ) {
-            if (points.size < 2) return@Canvas
-
+            // Всегда должны быть точки, так как мы создаем их для всего периода
             val maxY = points.maxOrNull() ?: 0f
-            val minY = 0f
             val rangeY = maxY.takeIf { it > 0f } ?: 1f
-            val stepX = size.width / (points.size - 1)
+            val stepX = if (points.size > 1) size.width / (points.size - 1) else size.width
             val yAxisSteps = 4
 
             val coords = points.mapIndexed { index, y ->
@@ -135,49 +141,53 @@ fun SimpleLineChart(transactions: List<TransactionDto>, isIncome: Boolean) {
                 }
             }
 
-            val path = Path().apply {
-                moveTo(coords[0].x, coords[0].y)
-                for (i in 1 until coords.size) {
-                    val prev = coords[i - 1]
-                    val curr = coords[i]
-                    val midX = (prev.x + curr.x) / 2
-                    cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
+            // Draw line connecting all points
+            if (coords.size > 1) {
+                val path = Path().apply {
+                    moveTo(coords[0].x, coords[0].y)
+                    for (i in 1 until coords.size) {
+                        val prev = coords[i - 1]
+                        val curr = coords[i]
+                        val midX = (prev.x + curr.x) / 2
+                        cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
+                    }
                 }
+
+                val fillPath = Path().apply {
+                    addPath(path)
+                    lineTo(coords.last().x, size.height)
+                    lineTo(coords.first().x, size.height)
+                    close()
+                }
+
+                drawPath(
+                    path = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(highlightColor.copy(alpha = 0.15f), Color.Transparent),
+                        startY = 0f,
+                        endY = size.height
+                    ),
+                    alpha = progress
+                )
+
+                drawPath(
+                    path = path,
+                    color = shadowColor,
+                    style = Stroke(width = 8f, cap = StrokeCap.Round),
+                    alpha = progress
+                )
+
+                drawPath(
+                    path = path,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(highlightColor, highlightColor.copy(alpha = 0.85f))
+                    ),
+                    style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                    alpha = progress
+                )
             }
 
-            val fillPath = Path().apply {
-                addPath(path)
-                lineTo(coords.last().x, size.height)
-                lineTo(coords.first().x, size.height)
-                close()
-            }
-
-            drawPath(
-                path = fillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(highlightColor.copy(alpha = 0.15f), Color.Transparent),
-                    startY = 0f,
-                    endY = size.height
-                ),
-                alpha = progress
-            )
-
-            drawPath(
-                path = path,
-                color = shadowColor,
-                style = Stroke(width = 8f, cap = StrokeCap.Round),
-                alpha = progress
-            )
-
-            drawPath(
-                path = path,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(highlightColor, highlightColor.copy(alpha = 0.85f))
-                ),
-                style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                alpha = progress
-            )
-
+            // Draw points
             coords.forEach { point ->
                 drawCircle(Color.White, radius = 9f, center = point, alpha = progress)
                 drawCircle(highlightColor, radius = 5f, center = point, alpha = progress)

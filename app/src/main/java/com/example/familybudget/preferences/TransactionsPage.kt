@@ -18,12 +18,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.familybudget.dto.TransactionDto
 import com.example.familybudget.formatIsoDateWithThreeTen
 import kotlin.math.abs
-import java.time.LocalDateTime
-import java.time.Month
+import org.threeten.bp.LocalDate
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.Month
+import org.threeten.bp.format.DateTimeFormatter
+import java.util.Locale
 
 private fun getMonthInGenitiveCase(month: Month): String {
     return when (month) {
@@ -43,45 +47,55 @@ private fun getMonthInGenitiveCase(month: Month): String {
 }
 
 @Composable
-fun TransactionsPage(transactions: List<TransactionDto>, isIncome: Boolean) {
+fun TransactionsPage(
+    transactions: List<TransactionDto>,
+    isIncome: Boolean,
+    startDate: LocalDate = LocalDate.now().withDayOfMonth(1),
+    endDate: LocalDate = LocalDate.now()
+) {
     val highlightColor = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
-
-    // Определяем текущий месяц из транзакций
-    val currentMonth = transactions.firstOrNull()?.let {
-        try {
-            LocalDateTime.parse(it.date).month
-        } catch (_: Exception) {
-            null
-        }
-    } ?: LocalDateTime.now().month
+    val dateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
+    
+    // Вычисляем общую сумму за период
+    val totalAmount = transactions.sumOf { abs(it.amount) }
 
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        if (transactions.isEmpty()) {
-            Text(
-                text = "Нет данных для отображения",
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp)
-            ) {
-                items(1) {
-                    SimpleLineChart(transactions = transactions, isIncome = isIncome)
-                    Spacer(modifier = Modifier.height(24.dp))
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp)
+        ) {
+            items(1) {
+                SimpleLineChart(
+                    transactions = transactions,
+                    isIncome = isIncome,
+                    startDate = startDate,
+                    endDate = endDate
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (isIncome) 
+                        "Доходы: ${String.format("%.0f", totalAmount)} ₽"
+                    else 
+                        "Расходы: ${String.format("%.0f", totalAmount)} ₽",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = highlightColor,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (transactions.isEmpty()) {
+                item {
                     Text(
-                        text = if (isIncome) 
-                            "Список пополнений за ${getMonthInGenitiveCase(currentMonth)}:"
-                        else 
-                            "Список расходов за ${getMonthInGenitiveCase(currentMonth)}:",
-                        style = MaterialTheme.typography.titleMedium
+                        text = "Нет данных для отображения",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
-
+            } else {
                 // Группируем транзакции по датам
                 val groupedTransactions = transactions
                     .groupBy { 
@@ -157,10 +171,6 @@ fun TransactionsPage(transactions: List<TransactionDto>, isIncome: Boolean) {
                                 )
                             }
                         }
-                    }
-                    
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
