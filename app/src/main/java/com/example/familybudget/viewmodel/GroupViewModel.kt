@@ -105,7 +105,7 @@ class GroupViewModel(
         }
     }
 
-    suspend fun getGroupBalance(groupId: String): Double {
+    suspend fun getGroupBalance(groupId: Long): Double {
         return try {
             Log.d("GroupViewModel", "Загрузка транзакций для группы $groupId")
             val transactions = api.getTransactionsForGroup(groupId)
@@ -120,14 +120,15 @@ class GroupViewModel(
         }
     }
 
-    fun addTransaction(groupId: String, amount: Double, type: TransactionType, context: Context) {
+    fun addTransaction(groupId: Long, amount: Double, type: TransactionType, context: Context, dateTime: String) {
         viewModelScope.launch {
             try {
                 repository.addTransaction(
                     groupId = groupId,
                     amount = amount,
-                    type = type,  // передаём тип, который пришёл в параметрах
+                    type = type,
                     context = context,
+                    dateTime = dateTime
                 )
                 loadGroup(context, repository.getCurrentUserId(context))
             } catch (e: Exception) {
@@ -136,8 +137,7 @@ class GroupViewModel(
         }
     }
 
-
-    fun loadTransactions(groupId: String) {
+    fun loadTransactions(groupId: Long) {
         viewModelScope.launch {
             try {
                 val result = api.getTransactionsForGroup(groupId)

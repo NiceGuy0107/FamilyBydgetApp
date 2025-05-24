@@ -17,7 +17,7 @@ interface GroupApiService {
     suspend fun leaveGroup(@Query("userId") userId: Int)
 
     @GET("group/{groupId}/transactions")
-    suspend fun getTransactionsForGroup(@Path("groupId") groupId: String): List<Transaction>
+    suspend fun getTransactionsForGroup(@Path("groupId") groupId: Long): List<Transaction>
 
     @POST("group/add-transaction")
     suspend fun addTransaction(@Body request: AddTransactionRequest): Transaction

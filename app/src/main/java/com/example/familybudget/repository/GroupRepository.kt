@@ -30,20 +30,19 @@ class GroupRepository(private val groupApiService: GroupApiService) {
         return id
     }
 
-
-
     suspend fun addTransaction(
-        groupId: String,
+        groupId: Long,
         amount: Double,
         type: TransactionType,
-        context: Context
+        context: Context,
+        dateTime: String
     ): Transaction {
         val username = getCurrentUsername(context)
-        val request = AddTransactionRequest(groupId, amount, username, type)
+        val request = AddTransactionRequest(groupId, amount, username, type.name, dateTime)
         return groupApiService.addTransaction(request)
     }
 
-    suspend fun getTransactionsForGroup(groupId: String): List<Transaction> {
+    suspend fun getTransactionsForGroup(groupId: Long): List<Transaction> {
         return groupApiService.getTransactionsForGroup(groupId)
     }
 }

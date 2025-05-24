@@ -1,6 +1,5 @@
 package com.example.familybudget.ui.screens.tabs
 
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,6 +31,7 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.example.familybudget.model.TransactionType
+import org.threeten.bp.LocalDateTime
 
 @Composable
 fun GroupTab(
@@ -58,7 +58,7 @@ fun GroupTab(
         val group = (groupState as? GroupState.Joined)?.familyGroup
         if (group != null) {
             coroutineScope.launch {
-                balance = groupViewModel.getGroupBalance(group.id)
+                balance = groupViewModel.getGroupBalance(group.id.toLong())
             }
         }
     }
@@ -167,9 +167,14 @@ fun GroupTab(
                                             if (selectedOption == "create" && groupName.isNotBlank()) {
                                                 groupViewModel.createGroup(groupName.trim(), username, context)
                                             } else if (selectedOption == "join") {
-                                                val code = joinGroupCode.toLongOrNull()
-                                                if (code != null && userId != -1) {
-                                                    groupViewModel.joinGroup(code, userId, context)
+                                                try {
+                                                    val code = joinGroupCode.trim().toLong()
+                                                    if (userId != -1) {
+                                                        groupViewModel.joinGroup(code, userId, context)
+                                                    }
+                                                } catch (e: NumberFormatException) {
+                                                    // Handle invalid input
+                                                    groupViewModel.setError("Неверный формат кода группы. Введите числовое значение.")
                                                 }
                                             }
                                         }
@@ -194,7 +199,6 @@ fun GroupTab(
 
                 is GroupState.Joined -> {
                     val group = state.familyGroup
-                    var transactionAmount by remember { mutableStateOf("") }
 
                     Spacer(Modifier.height(spacing))
 
@@ -267,115 +271,6 @@ fun GroupTab(
                     }
 
                     Spacer(Modifier.height(spacing))
-
-                    // Одна карточка с одним полем и двумя кнопками
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = CardDefaults.cardElevation(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(spacing)
-                                .fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Text(
-                                "Введите сумму",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            OutlinedTextField(
-                                value = transactionAmount,
-                                onValueChange = {
-                                    if (it.all { ch -> ch.isDigit() || ch == '.' }) {
-                                        transactionAmount = it
-                                    }
-                                },
-                                label = { Text("Сумма") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = {
-                                        val amount = transactionAmount.toDoubleOrNull()
-                                        if (amount != null && amount > 0) {
-                                            coroutineScope.launch {
-                                                groupViewModel.addTransaction(
-                                                    group.id,
-                                                    amount,
-                                                    TransactionType.INCOME,
-                                                    context
-                                                )
-                                                transactionAmount = ""
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = Color.Transparent, // прозрачный фон
-                                        contentColor = MaterialTheme.colorScheme.secondary // цвет текста и иконки
-                                    ),
-                                    border = BorderStroke(
-                                        1.5.dp,
-                                        MaterialTheme.colorScheme.secondary
-                                    ) // цветная обводка
-                                ) {
-                                    Icon(
-                                        Icons.Default.AttachMoney,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Пополнить", color = MaterialTheme.colorScheme.secondary)
-                                }
-
-                                OutlinedButton(
-                                    onClick = {
-                                        val amount = transactionAmount.toDoubleOrNull()
-                                        if (amount != null && amount > 0) {
-                                            coroutineScope.launch {
-                                                groupViewModel.addTransaction(
-                                                    group.id,
-                                                    amount,
-                                                    TransactionType.EXPENSE,
-                                                    context
-                                                )
-                                                transactionAmount = ""
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = Color.Transparent,
-                                        contentColor = MaterialTheme.colorScheme.error
-                                    ),
-                                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.error)
-                                ) {
-                                    Icon(
-                                        Icons.Default.MoneyOff,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Снять", color = MaterialTheme.colorScheme.error)
-                                }
-                            }
-                        }
-                    }
-
-                            Spacer(Modifier.height(spacing))
 
                     OutlinedButton(
                         onClick = {

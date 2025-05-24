@@ -11,14 +11,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.familybudget.R
 
 import com.example.familybudget.network.RetrofitInstance
 import com.example.familybudget.preferences.ThemePreferences
 import com.example.familybudget.ui.screens.tabs.HomeTab
-import com.example.familybudget.ui.screens.tabs.HistoryTab
 import com.example.familybudget.ui.screens.tabs.GroupTab
 import com.example.familybudget.ui.screens.tabs.SettingsTab
+import com.example.familybudget.ui.screens.HistoryScreen
 import com.example.familybudget.viewmodel.AuthViewModel
 import com.example.familybudget.viewmodel.GroupState
 import com.example.familybudget.viewmodel.GroupViewModel
@@ -104,14 +106,15 @@ fun MainScreen(
                 if (groupState is GroupState.Joined) {
                     val group = (groupState as GroupState.Joined).familyGroup
 
-                    LaunchedEffect(group.id) {
+                    LaunchedEffect(Unit) {
                         transactionViewModel.loadGroupTransactions(group.id.toLong())
                     }
 
-                    HistoryTab(
+                    HistoryScreen(
+                        viewModel = transactionViewModel,
+                        groupId = group.id.toLong(),
                         username = username,
-                        transactions = transactions,
-                        viewModel = transactionViewModel
+                        navController = navController
                     )
                 } else {
                     Text("Нет данных о группе")
@@ -128,15 +131,39 @@ fun MainScreen(
                 )
             }
 
-            composable("add_transaction/{username}?groupId={groupId}") { backStackEntry ->
+            composable(
+                route = "add_transaction/{username}?groupId={groupId}&type={type}&amount={amount}&dateTime={dateTime}",
+                arguments = listOf(
+                    navArgument("username") { type = NavType.StringType },
+                    navArgument("groupId") { type = NavType.LongType },
+                    navArgument("type") { type = NavType.StringType },
+                    navArgument("amount") { 
+                        type = NavType.StringType
+                        nullable = true 
+                    },
+                    navArgument("dateTime") { 
+                        type = NavType.StringType
+                        nullable = true 
+                    }
+                )
+            ) { backStackEntry ->
                 val usernameArg = backStackEntry.arguments?.getString("username") ?: ""
-                val groupId = backStackEntry.arguments?.getString("groupId")
-                val transactionViewModel = viewModel<com.example.familybudget.viewmodel.TransactionViewModel>()
+                val groupId = backStackEntry.arguments?.getLong("groupId")?.toString()
+                val type = backStackEntry.arguments?.getString("type")
+                val amount = backStackEntry.arguments?.getString("amount")
+                val dateTime = backStackEntry.arguments?.getString("dateTime")
+                val transactionViewModel = viewModel<TransactionViewModel>(
+                    factory = TransactionViewModelFactory(RetrofitInstance.transactionApiService)
+                )
 
                 AddTransactionScreen(
                     username = usernameArg,
                     groupId = groupId,
-                    transactionViewModel = transactionViewModel
+                    transactionType = type,
+                    amount = amount,
+                    dateTime = dateTime,
+                    transactionViewModel = transactionViewModel,
+                    navController = navController
                 )
             }
 

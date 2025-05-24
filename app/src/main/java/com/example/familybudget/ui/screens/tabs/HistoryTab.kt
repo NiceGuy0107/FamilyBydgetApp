@@ -17,12 +17,15 @@ import org.threeten.bp.LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import java.util.Locale
 import com.example.familybudget.ui.components.DatePickerDialog
+import androidx.navigation.NavController
 
 @Composable
 fun HistoryTab(
     username: String,
     transactions: List<TransactionDto>,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    navController: NavController,
+    groupId: Long
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -30,6 +33,7 @@ fun HistoryTab(
     val startDate = viewModel.startDate.value
     val endDate = viewModel.endDate.value
     val dateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
+    val isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
 
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
@@ -110,13 +114,23 @@ fun HistoryTab(
                     transactions = incomes,
                     isIncome = true,
                     startDate = startDate,
-                    endDate = endDate
+                    endDate = endDate,
+                    onAddTransaction = { amount, dateTime ->
+                        navController.navigate(
+                            "add_transaction/$username?groupId=$groupId&type=INCOME&amount=$amount&dateTime=${dateTime.format(isoFormatter)}"
+                        )
+                    }
                 )
                 1 -> TransactionsPage(
                     transactions = expenses,
                     isIncome = false,
                     startDate = startDate,
-                    endDate = endDate
+                    endDate = endDate,
+                    onAddTransaction = { amount, dateTime ->
+                        navController.navigate(
+                            "add_transaction/$username?groupId=$groupId&type=EXPENSE&amount=$amount&dateTime=${dateTime.format(isoFormatter)}"
+                        )
+                    }
                 )
             }
         }
