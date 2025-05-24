@@ -8,22 +8,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.sp
 import com.example.familybudget.dto.TransactionDto
 import kotlin.random.Random
+import org.threeten.bp.LocalDate
+import org.threeten.bp.Month
 
 @Composable
 fun HomeScreen(username: String, transactions: List<TransactionDto>) {
@@ -117,19 +119,38 @@ fun HomeScreen(username: String, transactions: List<TransactionDto>) {
 
 @Composable
 fun SummarySection(totalIncome: Double, totalExpense: Double) {
+    // Получаем текущий месяц в родительном падеже
+    val currentMonth = remember {
+        val month = LocalDate.now().month
+        when (month) {
+            Month.JANUARY -> "январе"
+            Month.FEBRUARY -> "феврале"
+            Month.MARCH -> "марте"
+            Month.APRIL -> "апреле"
+            Month.MAY -> "мае"
+            Month.JUNE -> "июне"
+            Month.JULY -> "июле"
+            Month.AUGUST -> "августе"
+            Month.SEPTEMBER -> "сентябре"
+            Month.OCTOBER -> "октябре"
+            Month.NOVEMBER -> "ноябре"
+            Month.DECEMBER -> "декабре"
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SummaryCard(
-            label = "Доходы",
+            label = "Доходы в $currentMonth",
             amount = totalIncome,
             icon = Icons.Default.ArrowDownward,
             iconBackground = Color(0xFF1E7711),
             gradientColors = listOf(Color(0xFF81C784), Color(0xFF388E3C))
         )
         SummaryCard(
-            label = "Расходы",
+            label = "Расходы в $currentMonth",
             amount = totalExpense,
             icon = Icons.Default.ArrowUpward,
             iconBackground = Color(0xFF881212),

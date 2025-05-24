@@ -77,9 +77,9 @@ fun TransactionsPage(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = if (isIncome) 
-                        "Доходы: ${String.format("%.0f", totalAmount)} ₽"
+                        "Доходы: ${String.format(Locale("ru"), "%,.2f", totalAmount)} ₽"
                     else 
-                        "Расходы: ${String.format("%.0f", totalAmount)} ₽",
+                        "Расходы: ${String.format(Locale("ru"), "%,.2f", totalAmount)} ₽",
                     style = MaterialTheme.typography.titleLarge,
                     color = highlightColor,
                     fontWeight = FontWeight.Bold
@@ -131,7 +131,7 @@ fun TransactionsPage(
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                text = String.format("%.0f ₽", dailyTotal),
+                                text = String.format(Locale("ru"), "%,.2f ₽", dailyTotal),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = highlightColor
                             )
@@ -158,7 +158,10 @@ fun TransactionsPage(
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     Text(
-                                        text = if (isIncome) "+${amountAbs}₽" else "-${amountAbs}₽",
+                                        text = if (isIncome) 
+                                            "+${String.format(Locale("ru"), "%,.2f", amountAbs)}₽" 
+                                        else 
+                                            "-${String.format(Locale("ru"), "%,.2f", amountAbs)}₽",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = highlightColor
                                     )
