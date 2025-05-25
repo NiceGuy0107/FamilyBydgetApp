@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -18,7 +19,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.items
 import androidx.navigation.NavController
 import com.example.familybudget.viewmodel.GroupState
 import com.example.familybudget.viewmodel.GroupViewModel
@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.example.familybudget.model.TransactionType
+import com.example.familybudget.model.UpcomingExpense
+import com.example.familybudget.ui.components.AddUpcomingExpenseDialog
 import org.threeten.bp.LocalDateTime
 
 @Composable
@@ -47,6 +49,7 @@ fun GroupTab(
     var selectedOption by remember { mutableStateOf("none") }
     var groupName by remember { mutableStateOf("") }
     var joinGroupCode by remember { mutableStateOf("") }
+    var showAddExpenseDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         if (userId != -1) {
@@ -59,8 +62,29 @@ fun GroupTab(
         if (group != null) {
             coroutineScope.launch {
                 balance = groupViewModel.getGroupBalance(group.id.toLong())
+                groupViewModel.loadUpcomingExpenses(group.id.toLong())
             }
         }
+    }
+
+    if (showAddExpenseDialog) {
+        AddUpcomingExpenseDialog(
+            onDismiss = { showAddExpenseDialog = false },
+            onConfirm = { description, amount, dueDate ->
+                val group = (groupState as? GroupState.Joined)?.familyGroup
+                if (group != null) {
+                    coroutineScope.launch {
+                        groupViewModel.createUpcomingExpense(
+                            description = description,
+                            amount = amount,
+                            dueDate = dueDate,
+                            groupId = group.id.toLong(),
+                            context = context
+                        )
+                    }
+                }
+            }
+        )
     }
 
     val spacing = 16.dp
@@ -224,15 +248,6 @@ fun GroupTab(
 
                     Spacer(Modifier.height(spacing))
 
-                    Text(
-                        "Участники группы",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -268,6 +283,110 @@ fun GroupTab(
                                 }
                             }
                         }
+                    }
+
+                    Spacer(Modifier.height(spacing))
+
+                    // Предстоящие расходы
+                    Text(
+                        "Предстоящие расходы",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        val expenses: List<UpcomingExpense> = groupViewModel.upcomingExpenses.collectAsState().value
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Transparent)
+                                .padding(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            items(expenses) { expense ->
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    tonalElevation = 2.dp,
+                                    color = Color.Transparent,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = expense.description,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "%.2f ₽".format(expense.amount),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                            Text(
+                                                text = "Добавил: ${expense.createdByUsername}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (expense.createdByUsername == username) {
+                                            IconButton(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        groupViewModel.deleteUpcomingExpense(
+                                                            expense.id.toLong(),
+                                                            context,
+                                                            group.id.toLong()
+                                                        )
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "Удалить",
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(spacing))
+
+                    Button(
+                        onClick = { showAddExpenseDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = ButtonDefaults.buttonElevation(8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Добавить предстоящий расход")
                     }
 
                     Spacer(Modifier.height(spacing))

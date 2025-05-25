@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.example.familybudget.model.FamilyGroup
 import com.example.familybudget.model.Transaction
+import com.example.familybudget.model.UpcomingExpense
 import com.example.familybudget.network.CreateGroupRequest
 import com.example.familybudget.network.JoinGroupRequest
 import com.example.familybudget.network.GroupApiService
+import com.example.familybudget.network.CreateUpcomingExpenseRequest
 import com.example.familybudget.repository.GroupRepository
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.format.DateTimeFormatter
 
 sealed class GroupState {
     object None : GroupState()
@@ -36,6 +40,8 @@ class GroupViewModel(
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions
 
+    private val _upcomingExpenses = MutableStateFlow<List<UpcomingExpense>>(emptyList())
+    val upcomingExpenses: StateFlow<List<UpcomingExpense>> = _upcomingExpenses
 
     fun setError(message: String) {
         _groupState.value = GroupState.Error(message)
@@ -145,6 +151,57 @@ class GroupViewModel(
             } catch (e: Exception) {
                 Log.e("GroupViewModel", "Ошибка загрузки транзакций", e)
                 _transactions.value = emptyList()
+            }
+        }
+    }
+
+    fun loadUpcomingExpenses(groupId: Long) {
+        viewModelScope.launch {
+            try {
+                val expenses = api.getUpcomingExpenses(groupId)
+                _upcomingExpenses.value = expenses
+            } catch (e: Exception) {
+                Log.e("GroupViewModel", "Ошибка загрузки предстоящих расходов", e)
+                _upcomingExpenses.value = emptyList()
+            }
+        }
+    }
+
+    fun createUpcomingExpense(
+        description: String,
+        amount: Double,
+        dueDate: LocalDateTime,
+        groupId: Long,
+        context: Context
+    ) {
+        viewModelScope.launch {
+            try {
+                val username = repository.getCurrentUsername(context)
+                val request = CreateUpcomingExpenseRequest(
+                    description = description,
+                    amount = amount,
+                    dueDate = dueDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    groupId = groupId,
+                    createdByUsername = username
+                )
+                api.createUpcomingExpense(request)
+                loadUpcomingExpenses(groupId)
+            } catch (e: Exception) {
+                Log.e("GroupViewModel", "Ошибка создания предстоящего расхода", e)
+                setError("Не удалось создать предстоящий расход: ${e.message ?: "Неизвестная ошибка"}")
+            }
+        }
+    }
+
+    fun deleteUpcomingExpense(expenseId: Long, context: Context, groupId: Long) {
+        viewModelScope.launch {
+            try {
+                val username = repository.getCurrentUsername(context)
+                api.deleteUpcomingExpense(expenseId, username)
+                loadUpcomingExpenses(groupId)
+            } catch (e: Exception) {
+                Log.e("GroupViewModel", "Ошибка удаления предстоящего расхода", e)
+                setError("Не удалось удалить предстоящий расход: ${e.message ?: "Неизвестная ошибка"}")
             }
         }
     }
