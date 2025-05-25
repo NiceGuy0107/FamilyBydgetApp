@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -34,7 +35,15 @@ import com.example.familybudget.model.TransactionType
 import com.example.familybudget.model.UpcomingExpense
 import com.example.familybudget.ui.components.AddUpcomingExpenseDialog
 import org.threeten.bp.LocalDateTime
+import org.threeten.bp.LocalDate
+import org.threeten.bp.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GroupTab(
     username: String,
@@ -50,6 +59,7 @@ fun GroupTab(
     var groupName by remember { mutableStateOf("") }
     var joinGroupCode by remember { mutableStateOf("") }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
+    var selectedExpense by remember { mutableStateOf<UpcomingExpense?>(null) }
 
     LaunchedEffect(userId) {
         if (userId != -1) {
@@ -82,6 +92,62 @@ fun GroupTab(
                             context = context
                         )
                     }
+                }
+            }
+        )
+    }
+
+    if (selectedExpense != null) {
+        AlertDialog(
+            onDismissRequest = { selectedExpense = null },
+            title = { Text("Детали расхода") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = selectedExpense!!.description,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "Сумма: %.2f ₽".format(selectedExpense!!.amount),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Добавил: ${selectedExpense!!.createdByUsername}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Дата: ${selectedExpense!!.dueDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            val group = (groupState as? GroupState.Joined)?.familyGroup
+                            if (group != null) {
+                                groupViewModel.deleteUpcomingExpense(
+                                    expenseId = selectedExpense!!.id.toLong(),
+                                    groupId = group.id.toLong(),
+                                    context = context
+                                )
+                            }
+                        }
+                        selectedExpense = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Удалить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedExpense = null }) {
+                    Text("Закрыть")
                 }
             }
         )
@@ -223,195 +289,181 @@ fun GroupTab(
 
                 is GroupState.Joined -> {
                     val group = state.familyGroup
+                    val expenses: List<UpcomingExpense> = groupViewModel.upcomingExpenses.collectAsState().value
 
-                    Spacer(Modifier.height(spacing))
-
-                    Text(
-                        text = group.name,
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-
-                    balance?.let {
-                        Text(
-                            "Баланс: %.2f ₽".format(it),
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    } ?: CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-
-                    Spacer(Modifier.height(spacing))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 200.dp)
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .clip(RoundedCornerShape(16.dp))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.Transparent)
-                                .padding(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        ) {
-                            items(group.members.toList()) { member ->
-                                Surface(
+                        item {
+                            Spacer(Modifier.height(4.dp))
+                        }
+
+                        item {
+                            Text(
+                                text = group.name,
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        item {
+                            Spacer(Modifier.height(4.dp))
+                        }
+
+                        // Список участников
+                        items(group.members.toList().sortedBy { it.id }) { member ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                tonalElevation = 2.dp,
+                                color = Color.Transparent,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Text(
+                                    text = member.username ?: "Пользователь",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        item {
+                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        item {
+                            balance?.let {
+                                Text(
+                                    "Баланс: %.2f ₽".format(it),
+                                    fontSize = 26.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.secondary,
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    tonalElevation = 2.dp,
-                                    color = Color.Transparent,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        item {
+                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Предстоящие расходы",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Button(
+                                    onClick = { showAddExpenseDialog = true },
+                                    modifier = Modifier.height(36.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF495D92)
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 16.dp)
                                 ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Добавить",
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = member.username ?: "Пользователь",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                        "Добавить",
+                                        color = Color.White
                                     )
                                 }
                             }
                         }
-                    }
 
-                    Spacer(Modifier.height(spacing))
+                        // Группировка по датам
+                        val groupedExpenses = expenses
+                            .sortedByDescending { it.dueDate }
+                            .groupBy { it.dueDate.toLocalDate() }
 
-                    // Предстоящие расходы
-                    Text(
-                        "Предстоящие расходы",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 200.dp)
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .clip(RoundedCornerShape(16.dp))
-                    ) {
-                        val expenses: List<UpcomingExpense> = groupViewModel.upcomingExpenses.collectAsState().value
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.Transparent)
-                                .padding(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        ) {
-                            items(expenses) { expense ->
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    tonalElevation = 2.dp,
-                                    color = Color.Transparent,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        groupedExpenses.forEach { (date, expensesForDate) ->
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Row(
+                                    Text(
+                                        text = date.format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "%.2f ₽".format(expensesForDate.sumOf { it.amount }),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+
+                            items(expensesForDate) { expense ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Column(
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .combinedClickable(
+                                                onClick = { },
+                                                onLongClick = { selectedExpense = expense }
+                                            )
+                                            .padding(12.dp)
                                     ) {
-                                        Column {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
                                             Text(
                                                 text = expense.description,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f)
                                             )
+                                            Spacer(modifier = Modifier.width(16.dp))
                                             Text(
-                                                text = "%.2f ₽".format(expense.amount),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.secondary
-                                            )
-                                            Text(
-                                                text = "Добавил: ${expense.createdByUsername}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                text = String.format(Locale("ru"), "%,.2f ₽", expense.amount),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = MaterialTheme.colorScheme.error
                                             )
                                         }
-                                        if (expense.createdByUsername == username) {
-                                            IconButton(
-                                                onClick = {
-                                                    coroutineScope.launch {
-                                                        groupViewModel.deleteUpcomingExpense(
-                                                            expense.id.toLong(),
-                                                            context,
-                                                            group.id.toLong()
-                                                        )
-                                                    }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Delete,
-                                                    contentDescription = "Удалить",
-                                                    tint = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Добавил: ${expense.createdByUsername}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
                                     }
+                                }
+                                if (expensesForDate.last() != expense) {
+                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
                             }
                         }
-                    }
 
-                    Spacer(Modifier.height(spacing))
-
-                    Button(
-                        onClick = { showAddExpenseDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = ButtonDefaults.buttonElevation(8.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Добавить предстоящий расход")
-                    }
-
-                    Spacer(Modifier.height(spacing))
-
-                    OutlinedButton(
-                        onClick = {
-                            if (userId != -1) {
-                                groupViewModel.leaveGroup(context, userId)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Покинуть группу",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        item {
+                            Spacer(Modifier.height(16.dp))
+                        }
                     }
                 }
 
