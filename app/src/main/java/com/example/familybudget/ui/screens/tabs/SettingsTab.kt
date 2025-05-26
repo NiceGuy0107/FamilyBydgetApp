@@ -159,22 +159,7 @@ fun SettingsTab(
     }
 
     Scaffold(
-        bottomBar = {
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    stringResource(R.string.logout),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+        // bottomBar убран, кнопка перенесена внутрь Card
     ) { padding ->
         Column(
             modifier = Modifier
@@ -191,7 +176,7 @@ fun SettingsTab(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(4.dp)
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     SettingItem(
@@ -212,8 +197,27 @@ fun SettingsTab(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // Новый заголовок "Аккаунт"
+                Text(
+                    text = "Аккаунт",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
+                )
 
+                OutlinedButton(
+                    onClick = onLogout,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    Text(
+                        stringResource(R.string.logout),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 OutlinedButton(
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.fillMaxWidth(),

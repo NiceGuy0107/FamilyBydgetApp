@@ -10,12 +10,14 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,20 +47,46 @@ fun HomeScreen(username: String, transactions: List<TransactionDto>) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Приветствие
-        Text(
-            text = "Здравствуйте, $username 👋",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = username,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
 
         // Карта
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp),
-            shape = RoundedCornerShape(28.dp),
-            elevation = CardDefaults.cardElevation(12.dp),
+                .height(200.dp)
+                .shadow(
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    clip = false
+                ),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(0.dp),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent)
         ) {
             Box(
@@ -101,13 +129,6 @@ fun HomeScreen(username: String, transactions: List<TransactionDto>) {
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
-                        Text(
-                            text = username.uppercase(),
-                            color = Color.White.copy(alpha = 0.85f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 1.sp
-                        )
                     }
                 }
             }
@@ -139,90 +160,62 @@ fun SummarySection(totalIncome: Double, totalExpense: Double) {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SummaryCard(
+        SummaryValueBlock(
             label = "Доходы в $currentMonth",
             amount = totalIncome,
-            icon = Icons.Default.ArrowDownward,
-            iconBackground = Color(0xFF1E7711),
-            gradientColors = listOf(Color(0xFF81C784), Color(0xFF388E3C))
+            amountColor = Color(0xFF4CAF50),
+            modifier = Modifier.weight(1f)
         )
-        SummaryCard(
+        SummaryValueBlock(
             label = "Расходы в $currentMonth",
             amount = totalExpense,
-            icon = Icons.Default.ArrowUpward,
-            iconBackground = Color(0xFF881212),
-            gradientColors = listOf(Color(0xFFD71010), Color(0xFFD32F2F))
+            amountColor = Color(0xFFF44336),
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
-fun SummaryCard(
-    label: String,
-    amount: Double,
-    icon: ImageVector,
-    iconBackground: Color,
-    gradientColors: List<Color>
-) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val cardColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
-    val textColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surface
-    val amountColor = if (icon == Icons.Default.ArrowDownward) Color(0xFF4CAF50) else Color(0xFFF44336)
-
+fun SummaryValueBlock(label: String, amount: Double, amountColor: Color, modifier: Modifier = Modifier) {
+    // Фон rgb(73,93,146)
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(90.dp),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
+        modifier = modifier
+            .height(90.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp),
+                clip = false
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF495D92))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(gradientColors)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = textColor,
-                        fontWeight = FontWeight.Medium
-                    )
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "%.2f ₽".format(amount),
-                    style = MaterialTheme.typography.headlineSmall.copy(
+                    style = MaterialTheme.typography.titleLarge.copy(
                         color = amountColor,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.Bold
                     )
                 )
             }
