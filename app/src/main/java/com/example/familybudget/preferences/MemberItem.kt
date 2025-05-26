@@ -48,7 +48,13 @@ fun MemberItem(member: User) {
 
             Spacer(Modifier.width(16.dp))
 
-            Text(member.username, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = member.username,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
     }
 }

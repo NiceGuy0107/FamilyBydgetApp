@@ -35,7 +35,9 @@ fun TimePickerDialog(
             ) {
                 Text(
                     text = "Выберите время",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
 
                 Row(

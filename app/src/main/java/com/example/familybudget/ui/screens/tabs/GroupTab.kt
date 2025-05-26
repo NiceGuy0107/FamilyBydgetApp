@@ -100,26 +100,39 @@ fun GroupTab(
     if (selectedExpense != null) {
         AlertDialog(
             onDismissRequest = { selectedExpense = null },
-            title = { Text("Детали расхода") },
+            title = { 
+                Text(
+                    "Детали расхода",
+                    color = MaterialTheme.colorScheme.onSurface
+                ) 
+            },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = "Описание: ${selectedExpense!!.description}",
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                     Text(
                         text = "Сумма: %.2f ₽".format(selectedExpense!!.amount),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color(0xFFF44336)
+                        )
                     )
                     Text(
                         text = "Добавил: ${selectedExpense!!.createdByUsername}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                     Text(
                         text = "Дата: ${selectedExpense!!.dueDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                 }
             },
@@ -181,14 +194,19 @@ fun GroupTab(
                                 is GroupState.Joining -> "Присоединение..."
                                 else -> "Загрузка..."
                             },
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         )
                     }
 
                     is GroupState.None -> {
                         Text(
                             "Вы не в группе",
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
                             modifier = Modifier.padding(bottom = spacing)
                         )
 
@@ -245,7 +263,10 @@ fun GroupTab(
                                             if (selectedOption == "create") groupName = it else joinGroupCode = it
                                         },
                                         label = {
-                                            Text(if (selectedOption == "create") "Название группы" else "Код группы")
+                                            Text(
+                                                if (selectedOption == "create") "Название группы" else "Код группы",
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
                                         },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                         modifier = Modifier.fillMaxWidth(),
@@ -274,14 +295,14 @@ fun GroupTab(
                                         shape = RoundedCornerShape(14.dp),
                                         elevation = ButtonDefaults.buttonElevation(8.dp)
                                     ) {
-                                        Text(if (selectedOption == "create") "Создать" else "Присоединиться")
+                                        Text(if (selectedOption == "create") "Создать" else "Присоединиться", color = MaterialTheme.colorScheme.onSurface)
                                     }
 
                                     TextButton(
                                         onClick = { selectedOption = "none" },
                                         modifier = Modifier.align(Alignment.End)
                                     ) {
-                                        Text("Назад")
+                                        Text("Назад", color = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
                             }
@@ -303,7 +324,10 @@ fun GroupTab(
                             item {
                                 Text(
                                     text = group.name,
-                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
                                     modifier = Modifier.fillMaxWidth(),
                                     textAlign = TextAlign.Center
                                 )
@@ -325,7 +349,9 @@ fun GroupTab(
                                 ) {
                                     Text(
                                         text = member.username ?: "Пользователь",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        ),
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                         textAlign = TextAlign.Start
                                     )
@@ -337,38 +363,54 @@ fun GroupTab(
                             }
 
                             item {
-                                Spacer(Modifier.height(8.dp))
-                            }
-
-                            item {
                                 balance?.let {
-                                    Text(
-                                        "Баланс: %.2f ₽".format(it),
-                                        fontSize = 26.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.secondary,
+                                    Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center
-                                    )
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "Баланс: ",
+                                            fontSize = 26.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            "%.2f ₽".format(it),
+                                            fontSize = 26.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
                             }
 
                             item {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(16.dp))
                             }
 
                             item {
-                                Text(
-                                    text = "Предстоящие расходы: %.2f ₽".format(expenses.sumOf { it.amount }),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Предстоящие расходы: ",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFFF44336)
+                                    )
+                                    Text(
+                                        text = "%.2f ₽".format(expenses.sumOf { it.amount }),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFFF44336)
+                                    )
+                                }
                             }
 
                             // Группировка по датам
                             val groupedExpenses = expenses
-                                .sortedByDescending { it.dueDate }
+                                .sortedBy { it.dueDate }
                                 .groupBy { it.dueDate.toLocalDate() }
 
                             groupedExpenses.forEach { (date, expensesForDate) ->
@@ -376,38 +418,31 @@ fun GroupTab(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                                            .padding(vertical = 8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
                                             text = date.format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))),
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
                                             text = "%.2f ₽".format(expensesForDate.sumOf { it.amount }),
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.error
+                                            color = Color(0xFFF44336)
                                         )
                                     }
                                 }
 
-                                items(expensesForDate) { expense ->
+                                items(expensesForDate.sortedBy { it.dueDate }) { expense ->
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 2.dp),
+                                            .padding(vertical = 4.dp),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .combinedClickable(
-                                                    onClick = { },
-                                                    onLongClick = { selectedExpense = expense }
-                                                )
-                                                .padding(12.dp)
-                                        ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -419,32 +454,29 @@ fun GroupTab(
                                                     overflow = TextOverflow.Ellipsis,
                                                     modifier = Modifier.weight(1f)
                                                 )
-                                                Spacer(modifier = Modifier.width(16.dp))
                                                 Text(
-                                                    text = String.format(Locale("ru"), "%,.2f ₽", expense.amount),
+                                                    text = "%.2f ₽".format(expense.amount),
                                                     style = MaterialTheme.typography.bodyLarge,
-                                                    color = MaterialTheme.colorScheme.error
+                                                    color = Color(0xFFF44336)
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Добавил: ${expense.createdByUsername}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "Добавил: ${expense.createdByUsername}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color.Gray
+                                                )
+                                            }
                                         }
-                                    }
-                                    if (expensesForDate.last() != expense) {
-                                        Spacer(modifier = Modifier.height(4.dp))
                                     }
                                 }
                             }
 
-                            item {
-                                Spacer(Modifier.height(16.dp))
-                            }
-
-                            // Добавляем дополнительное пространство в конце списка
+                            // Добавляем пространство в конце списка
                             item {
                                 Spacer(Modifier.height(80.dp))
                             }

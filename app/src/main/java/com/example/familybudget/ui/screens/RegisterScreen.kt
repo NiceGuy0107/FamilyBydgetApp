@@ -48,26 +48,46 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = registerTitle, style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = registerTitle,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text(emailLabel) }
+                label = { 
+                    Text(
+                        emailLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                }
             )
 
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text(usernameLabel) }
+                label = { 
+                    Text(
+                        usernameLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                }
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(passwordLabel) }
+                label = { 
+                    Text(
+                        passwordLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                }
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -80,13 +100,19 @@ fun RegisterScreen(
                     Toast.makeText(context, fillFieldsMessage, Toast.LENGTH_SHORT).show()
                 }
             }) {
-                Text(registerButton)
+                Text(
+                    registerButton,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(onClick = onNavigateToLogin) {
-                Text(loginText)
+                Text(
+                    loginText,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             // Handle register state

@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -167,13 +168,18 @@ fun SummaryCard(
     iconBackground: Color,
     gradientColors: List<Color>
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val cardColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
+    val textColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surface
+    val amountColor = if (icon == Icons.Default.ArrowDownward) Color(0xFF4CAF50) else Color(0xFFF44336)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(90.dp),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(
             modifier = Modifier
@@ -207,7 +213,7 @@ fun SummaryCard(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = Color.DarkGray,
+                        color = textColor,
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -215,7 +221,7 @@ fun SummaryCard(
                 Text(
                     text = "%.2f ₽".format(amount),
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        color = iconBackground,
+                        color = amountColor,
                         fontWeight = FontWeight.ExtraBold
                     )
                 )

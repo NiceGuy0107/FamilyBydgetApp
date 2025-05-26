@@ -49,20 +49,35 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = loginTitle, style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = loginTitle,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text(usernameLabel) }
+                label = { 
+                    Text(
+                        usernameLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                }
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(passwordLabel) },
+                label = { 
+                    Text(
+                        passwordLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ) 
+                },
                 visualTransformation = PasswordVisualTransformation()
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -76,13 +91,19 @@ fun LoginScreen(
                     Toast.makeText(context, fillFieldsMessage, Toast.LENGTH_SHORT).show()
                 }
             }) {
-                Text(loginButton)
+                Text(
+                    loginButton,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(onClick = onNavigateToRegister) {
-                Text(registerText)
+                Text(
+                    registerText,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             when (loginState) {

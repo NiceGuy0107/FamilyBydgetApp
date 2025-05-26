@@ -48,7 +48,9 @@ fun AddUpcomingExpenseDialog(
             ) {
                 Text(
                     "Добавить предстоящий расход",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
 
                 OutlinedTextField(

@@ -13,14 +13,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.familybudget.dto.TransactionDto
 import org.threeten.bp.LocalDateTime
 import org.threeten.bp.LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.max
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.font.FontWeight
 
 data class DailySum(
     val date: String,
@@ -34,6 +40,8 @@ fun SimpleLineChart(
     startDate: LocalDate = LocalDate.now().withDayOfMonth(1),
     endDate: LocalDate = LocalDate.now()
 ) {
+    val textMeasurer = rememberTextMeasurer()
+    
     val dailySums = remember(transactions, startDate, endDate) {
         // Create a sequence of all dates in the selected range (inclusive)
         val dateRange = generateSequence(startDate) { date ->
@@ -79,9 +87,15 @@ fun SimpleLineChart(
     val highlightColor = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
     val isDark = isSystemInDarkTheme()
 
-    val labelColor = if (isDark) Color.LightGray else Color.DarkGray
+    val textColor = if (isDark) Color.White else Color.Black
     val gridLineColor = colorScheme.onSurface.copy(alpha = 0.15f)
     val shadowColor = Color.Black.copy(alpha = 0.08f)
+
+    val textStyle = TextStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Normal,
+        color = textColor
+    )
 
     Box(
         modifier = Modifier
@@ -130,14 +144,19 @@ fun SimpleLineChart(
                     strokeWidth = 1.dp.toPx()
                 )
 
-                drawContext.canvas.nativeCanvas.apply {
-                    val paint = android.graphics.Paint().apply {
-                        isAntiAlias = true
-                        textSize = 28f
-                        color = labelColor.toArgb()
-                        setShadowLayer(4f, 0f, 0f, android.graphics.Color.argb(50, 0, 0, 0))
-                    }
-                    drawText(String.format("%.0f ₽", labelValue), -36f, y + 10f, paint)
+                drawIntoCanvas { canvas ->
+                    val text = String.format("%.0f ₽", labelValue)
+                    canvas.nativeCanvas.drawText(
+                        text,
+                        -36f,
+                        y + 10f,
+                        android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            textSize = 28f
+                            color = textColor.toArgb()
+                            setShadowLayer(4f, 0f, 0f, android.graphics.Color.argb(50, 0, 0, 0))
+                        }
+                    )
                 }
             }
 
@@ -210,14 +229,18 @@ fun SimpleLineChart(
 
             labelIndices.forEach { i ->
                 val label = dates.getOrNull(i) ?: ""
-                drawContext.canvas.nativeCanvas.apply {
-                    val paint = android.graphics.Paint().apply {
-                        isAntiAlias = true
-                        this.textSize = textSize
-                        color = labelColor.toArgb()
-                        setShadowLayer(3f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
-                    }
-                    drawText(label, coords[i].x - textSize/2, size.height + 28f, paint)
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.drawText(
+                        label,
+                        coords[i].x - textSize/2,
+                        size.height + 28f,
+                        android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            this.textSize = textSize
+                            color = textColor.toArgb()
+                            setShadowLayer(3f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
+                        }
+                    )
                 }
             }
 
@@ -235,32 +258,52 @@ fun SimpleLineChart(
                     else -> point.x - tooltipWidth / 2f
                 }
 
+                val tooltipBackground = if (isDark) {
+                    Color.DarkGray.copy(alpha = 0.85f)
+                } else {
+                    Color.White.copy(alpha = 0.95f)
+                }
+
+                // Draw tooltip background
                 drawRoundRect(
-                    color = Color.White,
+                    color = tooltipBackground,
+                    topLeft = Offset(offsetX, point.y - tooltipHeight - 8f),
+                    size = Size(tooltipWidth, tooltipHeight),
+                    cornerRadius = CornerRadius(8f, 8f)
+                )
+
+                // Draw tooltip border
+                drawRoundRect(
+                    color = if (isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.1f),
                     topLeft = Offset(offsetX, point.y - tooltipHeight - 8f),
                     size = Size(tooltipWidth, tooltipHeight),
                     cornerRadius = CornerRadius(8f, 8f),
-                    alpha = 0.9f
+                    style = Stroke(width = 1f)
                 )
 
-                drawContext.canvas.nativeCanvas.apply {
-                    val paint = android.graphics.Paint().apply {
-                        isAntiAlias = true
-                        textSize = 24f
-                        color = android.graphics.Color.BLACK
-                    }
-                    drawText(
-                        String.format("%.0f ₽", amount),
+                drawIntoCanvas { canvas ->
+                    val amountText = String.format("%.0f ₽", amount)
+                    canvas.nativeCanvas.drawText(
+                        amountText,
                         offsetX + 12f,
                         point.y - tooltipHeight / 2f,
-                        paint
+                        android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            textSize = 24f
+                            color = textColor.toArgb()
+                            setShadowLayer(3f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
+                        }
                     )
-                    paint.textSize = 20f
-                    drawText(
+                    canvas.nativeCanvas.drawText(
                         date,
                         offsetX + 12f,
                         point.y - 12f,
-                        paint
+                        android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            textSize = 20f
+                            color = textColor.toArgb()
+                            setShadowLayer(3f, 0f, 0f, android.graphics.Color.argb(80, 0, 0, 0))
+                        }
                     )
                 }
             }

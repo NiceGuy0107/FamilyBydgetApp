@@ -83,8 +83,9 @@ fun AddTransactionDialog(
             ) {
                 Text(
                     text = if (isIncome) "Добавить доход" else "Добавить расход",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
 
                 OutlinedTextField(
@@ -258,16 +259,16 @@ fun TransactionsPage(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    .padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
                                     text = formattedDate,
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
                                     text = String.format(Locale("ru"), "%,.2f ₽", dailyTotal),
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = highlightColor
                                 )
                             }
