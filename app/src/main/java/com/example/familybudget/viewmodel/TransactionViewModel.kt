@@ -62,11 +62,11 @@ class TransactionViewModel(
         }
     }
 
-    fun loadUserTransactions(userId: Int) {
+    fun loadUserTransactions(userId: Long) {
         viewModelScope.launch {
             try {
-                allTransactions = transactionApiService.getUserTransactions(userId)
-                filterTransactions()
+                val transactions = transactionApiService.getUserTransactions(userId)
+                _transactions.value = transactions
             } catch (e: Exception) {
                 Log.e("TransactionViewModel", "Ошибка загрузки транзакций пользователя: ${e.message}")
             }

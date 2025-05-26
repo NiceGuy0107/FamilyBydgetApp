@@ -3,6 +3,7 @@ package com.example.familybudget
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,7 +35,16 @@ class MainActivity : ComponentActivity() {
         AndroidThreeTen.init(this)
         val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         val username = sharedPreferences.getString("username", null)
-        val userId = sharedPreferences.getInt("userId", -1).takeIf { it != -1 } // -1 значит не сохранен
+        
+        // Safe retrieval of userId that handles both Integer and Long cases
+        val userId = try {
+            sharedPreferences.getLong("userId", -1L).takeIf { it != -1L }
+        } catch (e: ClassCastException) {
+            // If stored as Integer, convert to Long
+            sharedPreferences.getInt("userId", -1).takeIf { it != -1 }?.toLong()
+        }
+
+        Log.d("MainActivity", "Starting app with username: $username, userId: $userId")
 
         setContent {
             AppContent(
@@ -49,7 +59,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppContent(
     initialUsername: String?,
-    initialUserId: Int?,  // добавляем userId
+    initialUserId: Long?,
     sharedPreferences: SharedPreferences
 ) {
     val context = LocalContext.current
@@ -60,26 +70,31 @@ fun AppContent(
     val coroutineScope = rememberCoroutineScope()
 
     var usernameState by remember { mutableStateOf(initialUsername) }
-    var userIdState by remember { mutableStateOf(initialUserId) }  // состояние userId
+    var userIdState by remember { mutableStateOf(initialUserId) }
 
     var currentTheme by remember { mutableStateOf("light") }
+
+    Log.d("AppContent", "Current states - username: $usernameState, userId: $userIdState")
 
     // загружаем тему при входе
     LaunchedEffect(usernameState) {
         usernameState?.let { username ->
             currentTheme = themePreferences.getTheme(username)
+            Log.d("AppContent", "Loaded theme for user: $username - theme: $currentTheme")
         }
     }
 
     val isDarkTheme = currentTheme == "dark"
     val isUserLoggedIn = usernameState != null && userIdState != null
 
+    Log.d("AppContent", "isUserLoggedIn: $isUserLoggedIn")
+
     FamilyBudgetTheme(darkTheme = isDarkTheme) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-        MyApp(
+            MyApp(
                 isLoggedIn = isUserLoggedIn,
                 onToggleTheme = { themeKey ->
                     usernameState?.let {
@@ -90,17 +105,19 @@ fun AppContent(
                     }
                 },
                 onLogout = {
+                    Log.d("AppContent", "Logging out user")
                     sharedPreferences.edit().clear().apply()
                     usernameState = null
                     userIdState = null
                     currentTheme = "light"
                 },
                 onLoginSuccess = { loggedInUsername, loggedInUserId ->
+                    Log.d("AppContent", "Login success - username: $loggedInUsername, userId: $loggedInUserId")
                     usernameState = loggedInUsername
                     userIdState = loggedInUserId
                 },
                 themePreferences = themePreferences,
-                userId = userIdState  // передаем userId в MyApp, если нужно
+                userId = userIdState
             )
         }
     }
@@ -110,20 +127,32 @@ fun AppContent(
 fun MyApp(
     onToggleTheme: (String) -> Unit,
     onLogout: () -> Unit = {},
-    onLoginSuccess: (String, Int) -> Unit = { _, _ -> },
+    onLoginSuccess: (String, Long) -> Unit = { _, _ -> },
     isLoggedIn: Boolean = false,
     themePreferences: ThemePreferences,
-    userId: Int? = null  // добавляем userId
+    userId: Long? = null
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
+    Log.d("MyApp", "Starting with isLoggedIn: $isLoggedIn, userId: $userId")
+
+    val startDestination = if (isLoggedIn && userId != null) {
+        val username = sharedPrefs.getString("username", "") ?: ""
+        Log.d("MyApp", "User is logged in, navigating to main with userId: $userId, username: $username")
+        "main/$userId/$username"
+    } else {
+        Log.d("MyApp", "User is not logged in, navigating to login")
+        "login"
+    }
+
     NavHost(
         navController = navController,
-        startDestination = if (isLoggedIn && userId != null) "main/$userId/${sharedPrefs.getString("username", "")}" else "login"
+        startDestination = startDestination
     ) {
         composable("login") {
+            Log.d("MyApp", "Composing login screen")
             val authViewModel: AuthViewModel = viewModel()
 
             val apiService = remember { GroupApiService.create() }
@@ -132,47 +161,62 @@ fun MyApp(
 
             LoginScreen(
                 authViewModel = authViewModel,
-                onNavigateToRegister = { navController.navigate("register") },
+                onNavigateToRegister = { 
+                    Log.d("MyApp", "Navigating to register")
+                    navController.navigate("register") 
+                },
                 onLoginSuccess = { username, userId ->
+                    Log.d("MyApp", "Login successful, saving data - username: $username, userId: $userId")
                     sharedPrefs.edit()
                         .putString("username", username)
-                        .putInt("userId", userId)
+                        .putLong("userId", userId)
                         .apply()
                     onLoginSuccess(username, userId)
+                    Log.d("MyApp", "Navigating to main screen")
                     navController.navigate("main/$userId/$username") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
             )
         }
+
         composable("register") {
+            Log.d("MyApp", "Composing register screen")
             val authViewModel: AuthViewModel = viewModel()
             RegisterScreen(
                 authViewModel = authViewModel,
-                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToLogin = { 
+                    Log.d("MyApp", "Navigating back to login")
+                    navController.navigate("login") 
+                },
                 onRegisterSuccess = { username, userId ->
+                    Log.d("MyApp", "Registration successful, saving data - username: $username, userId: $userId")
                     sharedPrefs.edit()
                         .putString("username", username)
-                        .putInt("userId", userId)
+                        .putLong("userId", userId)
                         .apply()
                     onLoginSuccess(username, userId)
+                    Log.d("MyApp", "Navigating to main screen")
                     navController.navigate("main/$userId/$username") {
                         popUpTo("register") { inclusive = true }
                     }
                 }
             )
         }
+
         composable(
             "main/{userId}/{username}",
             arguments = listOf(
-                navArgument("userId") { type = NavType.IntType },
+                navArgument("userId") { type = NavType.LongType },
                 navArgument("username") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getInt("userId") ?: -1
+            val userId = backStackEntry.arguments?.getLong("userId") ?: -1L
             val username = backStackEntry.arguments?.getString("username") ?: ""
+            Log.d("MyApp", "Composing main screen with userId: $userId, username: $username")
 
-            if (userId == -1) {
+            if (userId == -1L) {
+                Log.d("MyApp", "Invalid userId, redirecting to login")
                 LaunchedEffect(Unit) {
                     navController.navigate("login") {
                         popUpTo("main/$userId/$username") { inclusive = true }
@@ -185,6 +229,7 @@ fun MyApp(
                     userId = userId,
                     onToggleTheme = onToggleTheme,
                     onLogout = {
+                        Log.d("MyApp", "Logging out user")
                         sharedPrefs.edit().clear().apply()
                         onLogout()
                         navController.navigate("login") {

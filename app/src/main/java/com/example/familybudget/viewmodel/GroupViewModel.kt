@@ -31,7 +31,6 @@ sealed class GroupState {
 class GroupViewModel(
     private val api: GroupApiService,
     private val repository: GroupRepository
-
 ) : ViewModel() {
 
     private val _groupState = MutableStateFlow<GroupState>(GroupState.None)
@@ -43,11 +42,27 @@ class GroupViewModel(
     private val _upcomingExpenses = MutableStateFlow<List<UpcomingExpense>>(emptyList())
     val upcomingExpenses: StateFlow<List<UpcomingExpense>> = _upcomingExpenses
 
+    private val _groups = MutableStateFlow<List<FamilyGroup>>(emptyList())
+    val groups: StateFlow<List<FamilyGroup>> = _groups
+
     fun setError(message: String) {
         _groupState.value = GroupState.Error(message)
     }
-    fun getCurrentUserId(context: Context): Int {
+
+    fun getCurrentUserId(context: Context): Long {
         return repository.getCurrentUserId(context)
+    }
+
+    fun loadUserGroups(userId: Long) {
+        viewModelScope.launch {
+            try {
+                val userGroups = api.getGroupByUserId(userId)
+                _groups.value = userGroups
+            } catch (e: Exception) {
+                Log.e("GroupViewModel", "Error loading user groups", e)
+                setError("Ошибка загрузки групп: ${e.message ?: "Неизвестная ошибка"}")
+            }
+        }
     }
 
     fun createGroup(name: String, username: String, context: Context) {
@@ -57,6 +72,8 @@ class GroupViewModel(
                 Log.d("GroupViewModel", "Создание группы: $name для пользователя $username")
                 val group = api.createGroup(CreateGroupRequest(name, username))
                 _groupState.value = GroupState.Joined(group)
+                // Обновляем список групп после создания новой
+                loadUserGroups(getCurrentUserId(context))
                 Log.d("GroupViewModel", "Группа успешно создана: ${group.id}")
             } catch (e: Exception) {
                 Log.e("GroupViewModel", "Ошибка создания группы", e)
@@ -65,13 +82,15 @@ class GroupViewModel(
         }
     }
 
-    fun joinGroup(groupId: Long, userId: Int, context: Context) {
+    fun joinGroup(groupId: Long, userId: Long, context: Context) {
         viewModelScope.launch {
             _groupState.value = GroupState.Joining
             try {
                 Log.d("GroupViewModel", "Присоединение к группе $groupId пользователем $userId")
                 val group = api.joinGroup(JoinGroupRequest(groupId, userId))
                 _groupState.value = GroupState.Joined(group)
+                // Обновляем список групп после присоединения к новой
+                loadUserGroups(userId)
                 Log.d("GroupViewModel", "Успешно присоединился к группе: ${group.name}")
             } catch (e: Exception) {
                 Log.e("GroupViewModel", "Ошибка входа в группу", e)
@@ -80,12 +99,14 @@ class GroupViewModel(
         }
     }
 
-    fun leaveGroup(context: Context, userId: Int) {
+    fun leaveGroup(context: Context, userId: Long) {
         viewModelScope.launch {
             try {
                 Log.d("GroupViewModel", "Выход пользователя $userId из группы")
                 api.leaveGroup(userId)
                 _groupState.value = GroupState.None
+                // Обновляем список групп после выхода из группы
+                loadUserGroups(userId)
                 Log.d("GroupViewModel", "Пользователь $userId вышел из группы")
             } catch (e: Exception) {
                 Log.e("GroupViewModel", "Ошибка выхода из группы", e)
@@ -94,7 +115,7 @@ class GroupViewModel(
         }
     }
 
-    fun loadGroup(context: Context, userId: Int) {
+    fun loadGroup(context: Context, userId: Long) {
         viewModelScope.launch {
             _groupState.value = GroupState.Loading
             try {

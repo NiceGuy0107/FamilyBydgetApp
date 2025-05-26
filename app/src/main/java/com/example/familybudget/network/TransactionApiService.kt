@@ -16,7 +16,7 @@ interface TransactionApiService {
     suspend fun addTransaction(@Body request: AddTransactionRequest): TransactionDto
 
     @GET("api/transactions/user/{userId}/transactions")
-    suspend fun getUserTransactions(@Path("userId") userId: Int): List<TransactionDto>
+    suspend fun getUserTransactions(@Path("userId") userId: Long): List<TransactionDto>
 
 }
 

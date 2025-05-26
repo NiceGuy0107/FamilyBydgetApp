@@ -7,16 +7,18 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import com.google.gson.annotations.SerializedName
+import com.google.gson.GsonBuilder
+import com.google.gson.Gson
 
 interface GroupApiService {
     @GET("group/user")
-    suspend fun getGroupByUserId(@Query("userid") userId: Int): List<FamilyGroup>
+    suspend fun getGroupByUserId(@Query("userid") userId: Long): List<FamilyGroup>
 
     @POST("group/create")
     suspend fun createGroup(@Body createGroupRequest: CreateGroupRequest): FamilyGroup
 
     @POST("group/leave")
-    suspend fun leaveGroup(@Query("userId") userId: Int)
+    suspend fun leaveGroup(@Query("userId") userId: Long)
 
     @GET("group/{groupId}/transactions")
     suspend fun getTransactionsForGroup(@Path("groupId") groupId: Long): List<Transaction>
@@ -41,9 +43,13 @@ interface GroupApiService {
 
     companion object {
         fun create(): GroupApiService {
+            val gson = GsonBuilder()
+                .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                .create()
+
             val retrofit = Retrofit.Builder()
                 .baseUrl("http://10.0.2.2:8080/")
-                .addConverterFactory(GsonConverterFactory.create(createGson()))
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()
 
             return retrofit.create(GroupApiService::class.java)

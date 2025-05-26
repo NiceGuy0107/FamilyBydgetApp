@@ -23,7 +23,7 @@ import com.example.familybudget.R
 fun LoginScreen(
     authViewModel: AuthViewModel,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: (String, Int) -> Unit
+    onLoginSuccess: (String, Long) -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

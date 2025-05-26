@@ -23,9 +23,9 @@ class GroupRepository(private val groupApiService: GroupApiService) {
         return sharedPreferences.getString("username", "") ?: ""
     }
 
-    fun getCurrentUserId(context: Context): Int {
+    fun getCurrentUserId(context: Context): Long {
         val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        val id = sharedPreferences.getInt("userId", -1)
+        val id = sharedPreferences.getLong("userId", -1L)
         Log.d("PrefsDebug", "getCurrentUserId returned: $id")
         return id
     }

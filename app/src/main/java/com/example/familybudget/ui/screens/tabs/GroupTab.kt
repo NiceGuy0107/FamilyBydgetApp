@@ -47,7 +47,7 @@ import androidx.compose.foundation.combinedClickable
 @Composable
 fun GroupTab(
     username: String,
-    userId: Int,
+    userId: Long,
     navController: NavController,
     groupViewModel: GroupViewModel
 ) {
@@ -62,7 +62,7 @@ fun GroupTab(
     var selectedExpense by remember { mutableStateOf<UpcomingExpense?>(null) }
 
     LaunchedEffect(userId) {
-        if (userId != -1) {
+        if (userId != -1L) {
             groupViewModel.loadGroup(context, userId)
         }
     }
@@ -281,7 +281,7 @@ fun GroupTab(
                                                 } else if (selectedOption == "join") {
                                                     try {
                                                         val code = joinGroupCode.trim().toLong()
-                                                        if (userId != -1) {
+                                                        if (userId != -1L) {
                                                             groupViewModel.joinGroup(code, userId, context)
                                                         }
                                                     } catch (e: NumberFormatException) {
@@ -348,7 +348,12 @@ fun GroupTab(
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                                 ) {
                                     Text(
-                                        text = member.username ?: "Пользователь",
+                                        text = buildString {
+                                            append(member.username ?: "Пользователь")
+                                            if (member.id == userId) {
+                                                append(" (вы)")
+                                            }
+                                        },
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             color = MaterialTheme.colorScheme.onSurface
                                         ),
@@ -356,6 +361,10 @@ fun GroupTab(
                                         textAlign = TextAlign.Start
                                     )
                                 }
+                            }
+
+                            item {
+                                Spacer(Modifier.height(8.dp))
                             }
 
                             item {

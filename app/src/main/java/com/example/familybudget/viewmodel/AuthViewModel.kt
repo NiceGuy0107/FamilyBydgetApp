@@ -22,29 +22,35 @@ class AuthViewModel : ViewModel() {
     val username: String
         get() = currentUsername ?: ""
 
-    private var currentUserId: Int? = null
-    val userId: Int
-        get() = currentUserId ?: -1
+    private var currentUserId: Long? = null
+    val userId: Long
+        get() = currentUserId ?: -1L
 
-    fun setCurrentUserId(id: Int?) {
+    init {
+        Log.d("AuthViewModel", "Initializing AuthViewModel")
+    }
+
+    fun setCurrentUserId(id: Long?) {
+        Log.d("AuthViewModel", "Setting currentUserId: $id")
         currentUserId = id
     }
 
     fun setCurrentUsername(username: String?) {
+        Log.d("AuthViewModel", "Setting currentUsername: $username")
         currentUsername = username
     }
 
     sealed class LoginState {
         object Idle : LoginState()
         object Loading : LoginState()
-        data class Success(val username: String, val userId: Int) : LoginState()
+        data class Success(val username: String, val userId: Long) : LoginState()
         data class Error(val message: String) : LoginState()
     }
 
     sealed class RegisterState {
         object Idle : RegisterState()
         object Loading : RegisterState()
-        data class Success(val username: String, val userId: Int) : RegisterState()
+        data class Success(val username: String, val userId: Long) : RegisterState()
         data class Error(val message: String) : RegisterState()
     }
 
@@ -55,21 +61,25 @@ class AuthViewModel : ViewModel() {
     val registerState: StateFlow<RegisterState> = _registerState.asStateFlow()
 
     fun login(username: String, password: String, context: Context) {
+        Log.d("AuthViewModel", "Attempting to login with username: $username")
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
             try {
                 val response = RetrofitInstance.api.login(AuthRequest(username, password))
+                Log.d("AuthViewModel", "Login response code: ${response.code()}")
+                
                 if (response.isSuccessful) {
                     val user = response.body()
                     if (user != null) {
+                        Log.d("AuthViewModel", "Login successful - userId: ${user.id}, username: ${user.username}")
                         currentUsername = user.username
-                        currentUserId = user.id?.toInt()
+                        currentUserId = user.id
 
-                        // --- Сохраняем userId и username в SharedPreferences ---
                         saveUserDataToPrefs(context, currentUserId, currentUsername)
 
-                        _loginState.value = LoginState.Success(user.username, user.id?.toInt() ?: -1)
+                        _loginState.value = LoginState.Success(user.username, user.id ?: -1L)
                     } else {
+                        Log.e("AuthViewModel", "Login response body is null")
                         _loginState.value = LoginState.Error("Пустой ответ от сервера")
                     }
                 } else {
@@ -77,11 +87,14 @@ class AuthViewModel : ViewModel() {
                         401 -> "Неверный логин или пароль"
                         else -> "Ошибка входа: ${response.code()}"
                     }
+                    Log.e("AuthViewModel", "Login failed: $message")
                     _loginState.value = LoginState.Error(message)
                 }
             } catch (e: IOException) {
+                Log.e("AuthViewModel", "Login IOException: ${e.message}")
                 _loginState.value = LoginState.Error("Нет интернета")
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Login Exception: ${e.message}")
                 _loginState.value = LoginState.Error("Сервер недоступен")
             }
         }
@@ -106,13 +119,13 @@ class AuthViewModel : ViewModel() {
                     val user = response.body()
                     if (user != null) {
                         currentUsername = user.username
-                        currentUserId = user.id?.toInt()
+                        currentUserId = user.id
 
                         // --- Сохраняем userId и username в SharedPreferences ---
                         saveUserDataToPrefs(context, currentUserId, currentUsername)
 
                         Log.d("REGISTER", "Registration successful for username: ${user.username}")
-                        _registerState.value = RegisterState.Success(user.username, user.id?.toInt() ?: -1)
+                        _registerState.value = RegisterState.Success(user.username, user.id ?: -1L)
                     } else {
                         _registerState.value = RegisterState.Error("Пустой ответ от сервера")
                     }
@@ -138,11 +151,15 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private fun saveUserDataToPrefs(context: Context, userId: Int?, username: String?) {
-        if (userId == null || username == null) return
+    private fun saveUserDataToPrefs(context: Context, userId: Long?, username: String?) {
+        if (userId == null || username == null) {
+            Log.e("AuthViewModel", "Cannot save user data: userId or username is null")
+            return
+        }
+        Log.d("AuthViewModel", "Saving user data to SharedPreferences - userId: $userId, username: $username")
         val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         sharedPreferences.edit()
-            .putInt("userId", userId)
+            .putLong("userId", userId)
             .putString("username", username)
             .apply()
     }

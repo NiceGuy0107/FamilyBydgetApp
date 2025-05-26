@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -27,12 +28,13 @@ import com.example.familybudget.viewmodel.GroupViewModel
 import com.example.familybudget.viewmodel.GroupViewModelFactory
 import com.example.familybudget.viewmodel.TransactionViewModel
 import com.example.familybudget.viewmodel.TransactionViewModelFactory
+import com.example.familybudget.network.GroupApiService
 
 
 @Composable
 fun MainScreen(
     username: String,
-    userId: Int,
+    userId: Long,
     onToggleTheme: (String) -> Unit,
     onLogout: () -> Unit,
     onNavigateToRegister: () -> Unit,
@@ -92,7 +94,17 @@ fun MainScreen(
                 val transactionViewModel: TransactionViewModel = viewModel(
                     factory = TransactionViewModelFactory(RetrofitInstance.transactionApiService)
                 )
-                HomeTab(username = username, userId = userId, viewModel = transactionViewModel)
+                val apiService = remember { GroupApiService.create() }
+                val factory = remember { GroupViewModelFactory(apiService) }
+                val groupViewModel: GroupViewModel = viewModel(factory = factory)
+
+                HomeTab(
+                    username = username,
+                    userId = userId,
+                    viewModel = transactionViewModel,
+                    groupViewModel = groupViewModel,
+                    navController = navController
+                )
             }
 
             composable("history") {
@@ -120,7 +132,6 @@ fun MainScreen(
                     Text("Нет данных о группе")
                 }
             }
-
 
             composable("group") {
                 GroupTab(

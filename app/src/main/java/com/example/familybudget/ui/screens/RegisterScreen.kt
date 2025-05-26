@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 fun RegisterScreen(
     authViewModel: AuthViewModel,
     onNavigateToLogin: () -> Unit,
-    onRegisterSuccess: ( String, Int) -> Unit
+    onRegisterSuccess: (String, Long) -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -120,7 +120,7 @@ fun RegisterScreen(
                 is AuthViewModel.RegisterState.Success -> {
                     LaunchedEffect(Unit) {
                         Toast.makeText(context, registrationSuccessMessage, Toast.LENGTH_SHORT).show()
-                        onRegisterSuccess(authViewModel.username, authViewModel.userId ?: -1)
+                        onRegisterSuccess(state.username, state.userId)
                     }
                 }
 
